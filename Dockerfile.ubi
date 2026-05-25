@@ -16,13 +16,12 @@
 # ---- builder ----
 FROM registry.access.redhat.com/ubi9/ubi-minimal AS builder
 
-# Install Rust build dependencies (curl-minimal for rustup download)
+# Install Rust build dependencies as root
 USER 0
 RUN microdnf install -y gcc gcc-c++ make openssl-devel pkg-config curl-minimal \
  && microdnf clean all
-USER 1001
 
-# Install rustup and stable toolchain
+# Install rustup and stable toolchain (must remain USER 0 to write to /usr/local)
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH
@@ -42,7 +41,6 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
 USER 0
 RUN microdnf install -y ca-certificates iproute \
  && microdnf clean all
-USER 1001
 
 COPY --from=builder /build/target/release/forkd-controller /usr/local/bin/forkd-controller
 
