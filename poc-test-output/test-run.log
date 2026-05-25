@@ -1,0 +1,68 @@
+================================================================================
+AutoPoC Test Run — forkd
+Date: 2026-05-25T00:16:03.643260+00:00
+Total run_script invocations: 1
+================================================================================
+
+================================================================================
+RUN #1: /workspace/forkd/poc_test.py
+STARTED: 2026-05-25T00:16:03.643260+00:00
+EXIT CODE: 0
+DURATION: 0.1s
+================================================================================
+
+--- STDOUT ---
+{
+  "results": [
+    {
+      "scenario_name": "health-check",
+      "status": "pass",
+      "output": "[]",
+      "error_message": null,
+      "duration_seconds": 0.02
+    },
+    {
+      "scenario_name": "list-snapshots",
+      "status": "pass",
+      "output": "[]",
+      "error_message": null,
+      "duration_seconds": 0.0
+    },
+    {
+      "scenario_name": "invalid-sandbox-request",
+      "status": "pass",
+      "output": "{\"error\":\"sandbox nonexistent-id not found\"}",
+      "error_message": null,
+      "duration_seconds": 0.0
+    },
+    {
+      "scenario_name": "create-sandbox-no-kvm",
+      "status": "pass",
+      "output": "Failed to deserialize the JSON body into the target type: missing field `snapshot_tag` at line 1 column 38",
+      "error_message": null,
+      "duration_seconds": 0.0
+    },
+    {
+      "scenario_name": "post-create-health-check",
+      "status": "pass",
+      "output": "[]",
+      "error_message": null,
+      "duration_seconds": 0.0
+    }
+  ]
+}
+
+
+--- STDERR ---
+(empty)
+
+================================================================================
+PARSED RESULTS SUMMARY
+================================================================================
+Total: 5 | Pass: 5 | Fail: 0 | Error: 0 | Skip: 0
+
+  [PASS ] health-check (0.0s)
+  [PASS ] list-snapshots (0.0s)
+  [PASS ] invalid-sandbox-request (0.0s)
+  [PASS ] create-sandbox-no-kvm (0.0s)
+  [PASS ] post-create-health-check (0.0s)
