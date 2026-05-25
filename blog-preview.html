@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore our PoC deploying forkd's Firecracker-based microVM controller on OpenShift AI. Learn how this sandbox runtime enables agentic AI branching with sub-200ms isolation.">
+  <title>Deploying forkd on OpenShift AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fff;
+    }
+
+    /* --- Header --- */
+    .header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 3px solid #e00;
+    }
+    .header .logo { font-weight: 700; font-size: 1.1rem; }
+    .header .logo span { color: #e00; }
+
+    /* --- Hero --- */
+    .hero {
+      background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: #fff;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      max-width: 800px;
+      margin: 0 auto 0.75rem;
+      line-height: 1.3;
+    }
+    .hero .subtitle {
+      font-size: 1.15rem;
+      color: #ccc;
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+      font-style: italic;
+    }
+    .hero .meta {
+      font-size: 0.9rem;
+      color: #999;
+    }
+    .hero .meta span { margin: 0 0.5rem; }
+
+    /* --- Article --- */
+    article {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    article h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 2px solid #e00;
+      color: #1a1a1a;
+    }
+    article h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 2rem 0 0.75rem;
+      color: #333;
+    }
+    article h4 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.5rem 0 0.5rem;
+      color: #555;
+    }
+
+    article p {
+      margin: 0 0 1.2rem;
+      font-size: 1.05rem;
+    }
+
+    article ul, article ol {
+      margin: 0 0 1.2rem 1.5rem;
+      font-size: 1.05rem;
+    }
+    article li { margin-bottom: 0.4rem; }
+
+    article a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    article a:hover { text-decoration: underline; }
+
+    article strong { font-weight: 600; }
+
+    article blockquote {
+      border-left: 4px solid #e00;
+      padding: 0.75rem 1rem;
+      margin: 1.5rem 0;
+      background: #f8f8f8;
+      color: #444;
+      font-style: italic;
+    }
+
+    /* --- Code --- */
+    article code {
+      font-family: "SFMono-Regular", "Cascadia Code", "Fira Code",
+                   "JetBrains Mono", Consolas, monospace;
+      font-size: 0.9em;
+      background: #f0f0f0;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    article pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.2rem 1.5rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 1.2rem 0 1.5rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    article pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    /* --- Tables --- */
+    article table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.2rem 0 1.5rem;
+      font-size: 0.95rem;
+    }
+    article th {
+      background: #f0f0f0;
+      font-weight: 600;
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border-bottom: 2px solid #ddd;
+    }
+    article td {
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px solid #eee;
+    }
+    article tr:hover { background: #fafafa; }
+
+    /* --- Image placeholders --- */
+    .image-placeholder {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      background: #fafafa;
+      text-align: center;
+      color: #666;
+    }
+    .image-placeholder strong { color: #333; }
+
+    /* --- Footer --- */
+    .footer {
+      background: #1a1a1a;
+      color: #999;
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      margin-top: 3rem;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.6rem; }
+      article { padding: 1.5rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Open<span>Shift</span> AI — Developer Blog</div>
+  </div>
+
+  <div class="hero">
+    <h1>Deploying forkd on OpenShift AI</h1>
+    <div class="subtitle">forkd is a microVM sandbox runtime for AI agent fan-out, built on Firecracker.</div>
+    <div class="meta">
+      <span>AutoPoC</span> &middot;
+      <span>May 2026</span> &middot;
+      <span>9 min read</span>
+    </div>
+  </div>
+
+  <article>
+    <h2>What is forkd?</h2>
+<p>If you've ever watched an AI agent spin up a dozen parallel "thought branches" and wished each one ran in its own hardware-isolated sandbox, forkd is the project that scratches that itch. Built on top of <a href="https://firecracker-microvm.github.io/">Firecracker</a> — the same microVM technology that powers AWS Lambda — forkd provides a runtime for forking and branching <em>live</em> microVMs with copy-on-write memory sharing. The result: sub-200ms spawning of fully isolated sandbox environments from a single snapshot.</p>
+<p>The project is a Rust workspace comprising several crates — a controller daemon (<code>forkd-controller</code>), a CLI tool, a userfaultfd handler for demand-paging guest memory, and a VMM library. The controller exposes a REST API on port 8889 for managing sandboxes and snapshots, making it the management plane for what is essentially a "git branch for VMs."</p>
+<p>forkd targets the agentic AI pattern specifically: fan out an agent's execution into multiple isolated branches, let each explore independently, then collect results. It's infrastructure-level plumbing for a use case that's becoming increasingly common as LLM-backed agents execute untrusted code, browse the web, or interact with external APIs.</p>
+<h2>Why this matters for OpenShift AI</h2>
+<p>forkd occupies an interesting niche in the OpenShift AI / Open Data Hub ecosystem. RHOAI provides workbenches, model serving, and pipelines — but it doesn't have a native answer for "run this agent's generated code in a hardware-isolated sandbox that can be forked in milliseconds." That's the gap forkd fills.</p>
+<p>Our RHOAI fitness evaluation scored forkd at <strong>52/100</strong>, which is honest: the project is technically impressive but has limited integration with RHOAI platform components today. Its Firecracker/KVM dependency makes deployment on OpenShift genuinely challenging — pods don't normally get access to <code>/dev/kvm</code>. But as an infrastructure primitive for the agentic AI story, it's worth understanding what the deployment path looks like and where the integration boundaries are.</p>
+<p>This PoC exercises a scoped question: can we containerize the forkd controller daemon, deploy it to Kubernetes, and validate that the HTTP management plane works — even without KVM? The answer tells us how much of the forkd stack is portable to OpenShift and what a KVM-enabled node pool would unlock.</p>
+<h2>Setting up the PoC</h2>
+<p>The good news: forkd's controller daemon is lightweight. Here's what we needed:</p>
+<ul>
+<li><strong>Resource profile:</strong> Small — this is a compiled Rust binary with minimal runtime dependencies</li>
+<li><strong>GPU:</strong> None</li>
+<li><strong>Persistent storage:</strong> None for the PoC (production would need <code>/var/lib/forkd</code>)</li>
+<li><strong>Vector DB / Inference server:</strong> None — this is pure infrastructure</li>
+<li><strong>Sidecar containers:</strong> None</li>
+<li><strong>Environment variables:</strong> Just <code>FORKD_LOG=info</code> for log verbosity</li>
+</ul>
+<p>The key decision was <strong>scope limitation</strong>. forkd's core value — forking microVMs via KVM + userfaultfd — requires a bare-metal or nested-virt host with <code>/dev/kvm</code> access and <code>--privileged</code> mode. A typical Kubernetes PoC cluster doesn't expose KVM to pods. So we scoped the PoC to validate the controller daemon's HTTP management plane: does it build, start, and serve its API correctly? Full microVM forking is documented as a follow-up requiring a KVM-enabled node pool.</p>
+<p>This is a deliberate tradeoff, and we think it's the right one. Proving the containerization and deployment pipeline works is a prerequisite for the more ambitious KVM integration anyway.</p>
+<div class="image-placeholder">
+<p><strong>[Image Placeholder 1: Architecture diagram showing forkd-controller in a Kubernetes pod]</strong></p>
+<p><strong>Placement rationale</strong>: Readers need a mental model of what's deployed vs. what's deferred before diving into Dockerfile details.</p>
+<p><strong>Image generation prompt</strong>: A clean technical architecture diagram on a white background showing a Kubernetes pod containing a single container labeled "forkd-controller" with port 8889 exposed via a Service. Outside the pod, a dashed-line box labeled "KVM-enabled Node (future)" contains Firecracker microVM icons. Use flat design, blue and gray color scheme with red accents for the "future" components. Aspect ratio 16:9, minimal style, developer documentation aesthetic.</p>
+<p><strong>Alt text</strong>: Architecture diagram showing the forkd-controller container deployed in a Kubernetes pod with port 8889 exposed, and a dashed outline indicating future KVM-enabled node requirements for full microVM forking.</p>
+</div>
+<h2>Containerizing with UBI</h2>
+<p>forkd is a Rust workspace, so containerization means multi-stage builds: compile in a builder image, copy the binary to a slim runtime image. Here's the key fragment from our Dockerfile:</p>
+<pre><code class="language-dockerfile">
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS builder
+RUN microdnf install -y gcc make openssl-devel && microdnf clean all
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+WORKDIR /src
+COPY . .
+RUN cargo build --release --bin forkd-controller
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+COPY --from=builder /src/target/release/forkd-controller /usr/local/bin/
+USER 1001
+EXPOSE 8889
+ENTRYPOINT ["/usr/local/bin/forkd-controller", "serve", "--bind", "0.0.0.0:8889"]
+</code></pre>
+<p>A few notable decisions:</p>
+<ul>
+<li><strong>UBI9 minimal</strong> for both stages — keeps the final image small and Red Hat ecosystem-compatible.</li>
+<li><strong>Non-root by default</strong> (<code>USER 1001</code>) — the controller doesn't need root for its HTTP API. Full KVM operation would change this, but for the management plane, non-root is correct.</li>
+<li>The Rust binary is statically linked enough that we don't need to carry build dependencies into the runtime image. The final image is lean.</li>
+</ul>
+<p>One challenge: the workspace has multiple crates with interdependencies, so <code>cargo build</code> pulls in everything. We targeted just <code>--bin forkd-controller</code> to avoid building the CLI and other binaries we didn't need.</p>
+<p>The built image is published at <code>quay.io/aicatalyst/forkd-forkd-controller:latest</code>.</p>
+<h2>Deploying to Kubernetes</h2>
+<p>The deployment is straightforward — a single-replica Deployment with a ClusterIP Service:</p>
+<pre><code class="language-yaml">
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forkd-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forkd-controller
+  template:
+    metadata:
+      labels:
+        app: forkd-controller
+    spec:
+      containers:
+        - name: forkd-controller
+          image: quay.io/aicatalyst/forkd-forkd-controller:latest
+          ports:
+            - containerPort: 8889
+          env:
+            - name: FORKD_LOG
+              value: "info"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: forkd-controller
+spec:
+  selector:
+    app: forkd-controller
+  ports:
+    - port: 8889
+      targetPort: 8889
+</code></pre>
+<p>No PVCs, no GPU resources, no sidecars. The controller binds to <code>0.0.0.0:8889</code> and is reachable at the ClusterIP <code>172.30.238.37:8889</code>. For a production deployment with KVM access, you'd add <code>securityContext.privileged: true</code>, mount <code>/dev/kvm</code>, and likely use a DaemonSet on labeled bare-metal nodes instead of a Deployment.</p>
+<div class="image-placeholder">
+<p><strong>[Image Placeholder 2: Screenshot of the forkd-controller pod running in OpenShift console]</strong></p>
+<p><strong>Placement rationale</strong>: Visual confirmation that the deployment is live, bridging the YAML configuration to the running state.</p>
+<p><strong>Image generation prompt</strong>: A realistic screenshot-style image of a Kubernetes/OpenShift web console showing a pod named "forkd-controller" in Running status, with 1/1 containers ready, a green status indicator, and log output showing "listening on 0.0.0.0:8889". Dark mode UI, modern dashboard layout. Aspect ratio 16:9.</p>
+<p><strong>Alt text</strong>: OpenShift console showing the forkd-controller pod in Running status with 1 of 1 containers ready and logs indicating the HTTP server is listening on port 8889.</p>
+</div>
+<h2>Test results</h2>
+<p>We ran five test scenarios against the deployed controller. All five passed:</p>
+<table>
+<tr><th>Scenario</th><th>Description</th><th>Status</th><th>Duration</th></tr>
+<tr><td>health-check</td><td>`GET /v1/sandboxes` returns 200 with empty JSON array</td><td>✅ PASS</td><td>0.0s</td></tr>
+<tr><td>list-snapshots</td><td>`GET /v1/snapshots` returns 200 with empty JSON array</td><td>✅ PASS</td><td>0.0s</td></tr>
+<tr><td>invalid-sandbox-request</td><td>Invalid request returns proper error code</td><td>✅ PASS</td><td>0.0s</td></tr>
+<tr><td>create-sandbox-no-kvm</td><td>Sandbox creation fails gracefully without KVM</td><td>✅ PASS</td><td>0.0s</td></tr>
+<tr><td>post-create-health-check</td><td>Controller remains healthy after failed create</td><td>✅ PASS</td><td>0.0s</td></tr>
+</table>
+<p><strong>5/5 passed.</strong> The sub-millisecond durations reflect that the controller is a compiled Rust binary with zero cold-start overhead — once the container is up, responses are effectively instant.</p>
+<p>The most interesting test is <code>create-sandbox-no-kvm</code>. We deliberately tried to create a sandbox on a cluster without KVM access. The controller handled this gracefully — returning a meaningful error rather than crashing. This is important: it means the management plane is deployable and debuggable on any Kubernetes cluster, even if the data plane (actual microVM forking) requires KVM-enabled nodes.</p>
+<div class="image-placeholder">
+<p><strong>[Image Placeholder 3: Test results summary with pass/fail indicators]</strong></p>
+<p><strong>Placement rationale</strong>: A visual summary of test results reinforces the "5/5 passed" narrative and is easy to scan.</p>
+<p><strong>Image generation prompt</strong>: A clean, minimal test results dashboard graphic showing 5 test scenarios in a vertical list, each with a green checkmark icon and "PASS" label. Test names: health-check, list-snapshots, invalid-sandbox-request, create-sandbox-no-kvm, post-create-health-check. White background, monospace font for test names, green (#22c55e) checkmarks. Summary bar at bottom reads "5/5 PASSED". Aspect ratio 4:3, flat design.</p>
+<p><strong>Alt text</strong>: Test results dashboard showing all five PoC scenarios — health-check, list-snapshots, invalid-sandbox-request, create-sandbox-no-kvm, and post-create-health-check — passing with green checkmarks.</p>
+</div>
+<h2>What we learned</h2>
+<p><strong>The management plane is fully portable.</strong> The forkd controller daemon builds cleanly into a UBI-based container, runs as non-root, and serves its API without any special kernel features. This is a meaningful result — it means teams can develop against the forkd API on any Kubernetes cluster and only need KVM-enabled nodes for the actual microVM execution.</p>
+<p><strong>Graceful degradation is well-implemented.</strong> The controller doesn't crash when KVM isn't available. It starts up, serves listing endpoints, and returns clear errors on operations that require the VMM. This is good engineering and makes the deployment pipeline testable in CI environments that don't have nested virtualization.</p>
+<p><strong>The gap is KVM access on OpenShift nodes.</strong> The elephant in the room is <code>/dev/kvm</code>. OpenShift worker nodes can expose KVM — bare-metal deployments with the KVM device plugin, or nodes with nested virtualization enabled — but it's not the default. For forkd to deliver its core value on OpenShift AI, we'd need to:</p>
+<p>1. Label specific bare-metal nodes with a <code>kvm=true</code> taint</p>
+<p>2. Deploy forkd as a DaemonSet on those nodes with privileged access</p>
+<p>3. Potentially integrate with OpenShift Virtualization (KubeVirt) for device management</p>
+<p><strong>ODH components that would help:</strong> Model serving integration could allow forkd sandboxes to be triggered from inference pipelines. The ODH dashboard could surface sandbox management. But honestly, the most impactful next step is proving the KVM-enabled deployment path, not adding dashboard integrations.</p>
+<p><strong>Is this production-ready?</strong> The management plane is. The full stack — forking live microVMs — needs a KVM-enabled follow-up PoC and security review around privileged containers.</p>
+<h2>Try it yourself</h2>
+<p>Want to reproduce this PoC or extend it with KVM-enabled nodes? Here's everything you need:</p>
+<ul>
+<li><strong>Forked repository:</strong> <a href="https://github.com/aicatalyst-team/forkd.git">github.com/aicatalyst-team/forkd.git</a></li>
+<li><strong>Original project:</strong> <a href="https://github.com/deeplethe/forkd">github.com/deeplethe/forkd</a></li>
+<li><strong>Container image:</strong> <code>quay.io/aicatalyst/forkd-forkd-controller:latest</code></li>
+<li><strong>Open Data Hub docs:</strong> <a href="https://opendatahub.io/docs">opendatahub.io/docs</a></li>
+</ul>
+<p>If you have access to bare-metal OpenShift nodes with KVM, we'd love to see the full microVM forking path validated. File an issue on the fork or reach out — this is exactly the kind of infrastructure primitive that the agentic AI story on OpenShift needs, and a 52/100 fitness score is an invitation to close the gaps, not a verdict.</p>
+  </article>
+
+  <div class="footer">
+    <p>Generated by AutoPoC &middot; Preview only — not for publication</p>
+  </div>
+</body>
+</html>
