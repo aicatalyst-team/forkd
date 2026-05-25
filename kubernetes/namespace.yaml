@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: forkd
+  labels:
+    app.kubernetes.io/name: forkd
+    app.kubernetes.io/managed-by: autopoc

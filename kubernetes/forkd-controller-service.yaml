@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: forkd-controller
+  namespace: forkd
+  labels:
+    app.kubernetes.io/name: forkd-controller
+    app.kubernetes.io/part-of: forkd
+    app.kubernetes.io/managed-by: autopoc
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: forkd-controller
+  ports:
+    - name: api
+      port: 8889
+      targetPort: 8889
+      protocol: TCP

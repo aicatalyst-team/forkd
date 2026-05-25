@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forkd-controller
+  namespace: forkd
+  labels:
+    app.kubernetes.io/name: forkd-controller
+    app.kubernetes.io/part-of: forkd
+    app.kubernetes.io/managed-by: autopoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: forkd-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: forkd-controller
+        app.kubernetes.io/part-of: forkd
+    spec:
+      containers:
+        - name: forkd-controller
+          image: quay.io/aicatalyst/forkd-forkd-controller:latest
+          imagePullPolicy: Always
+          ports:
+            - name: api
+              containerPort: 8889
+              protocol: TCP
+          env:
+            - name: FORKD_LOG
+              value: "info"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /v1/sandboxes
+              port: 8889
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /v1/sandboxes
+              port: 8889
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
