@@ -1,0 +1,62 @@
+# Multi-stage UBI build for the forkd-controller binary.
+#
+# The controller is the long-running daemon; this image runs it as PID 1.
+# It does NOT contain Firecracker or KVM tooling — those must be available
+# on the host kernel. The container is expected to run with
+# `--privileged --network=host --pid=host` (or equivalent CAP_NET_ADMIN +
+# CAP_SYS_ADMIN + KVM access) so the daemon can manage netns and cgroups.
+#
+# Build:   docker build -f Dockerfile.ubi -t forkd-controller .
+# Run:     docker run -d --name forkd --privileged --network=host \
+#              -v /var/lib/forkd:/var/lib/forkd \
+#              -v /var/log/forkd:/var/log/forkd \
+#              -v $HOME/.local/share/forkd/snapshots:/var/lib/forkd/snapshots:ro \
+#              forkd-controller
+
+# ---- builder ----
+FROM registry.access.redhat.com/ubi9/ubi-minimal AS builder
+
+# Install Rust build dependencies (curl-minimal for rustup download)
+USER 0
+RUN microdnf install -y gcc gcc-c++ make openssl-devel pkg-config curl-minimal \
+ && microdnf clean all
+USER 1001
+
+# Install rustup and stable toolchain
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal \
+ && chmod -R a+rX /usr/local/rustup /usr/local/cargo
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock* rust-toolchain.toml ./
+COPY crates ./crates
+COPY experiments ./experiments
+
+RUN cargo build --release --bin forkd-controller
+
+# ---- runtime ----
+FROM registry.access.redhat.com/ubi9/ubi-minimal AS runtime
+
+USER 0
+RUN microdnf install -y ca-certificates iproute \
+ && microdnf clean all
+USER 1001
+
+COPY --from=builder /build/target/release/forkd-controller /usr/local/bin/forkd-controller
+
+# Create data and log directories; grant group 0 permissions for OpenShift
+RUN mkdir -p /var/lib/forkd /var/log/forkd /opt/app-root/src \
+ && chgrp -R 0 /var/lib/forkd /var/log/forkd /opt/app-root /usr/local/bin/forkd-controller \
+ && chmod -R g=u /var/lib/forkd /var/log/forkd /opt/app-root /usr/local/bin/forkd-controller
+
+ENV FORKD_LOG=info
+
+WORKDIR /opt/app-root/src
+
+USER 1001
+EXPOSE 8889
+
+ENTRYPOINT ["/usr/local/bin/forkd-controller", "serve"]
+CMD ["--bind", "0.0.0.0:8889"]
