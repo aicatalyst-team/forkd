@@ -1,4 +1,10 @@
-<br/>
+> [!WARNING]
+> **This repository is archived.**
+>
+> Archived on 2026-09-08 by the AI Catalyst Platform Team.
+> It is read-only and no longer maintained.
+
+---<br/>
 
 <div align="center">
   <picture>
